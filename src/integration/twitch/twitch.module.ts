@@ -7,21 +7,18 @@ import { UserModule } from '../../user/user.module';
 import { UserModel } from '../../user/models/user.model';
 import { TwitchBidsGateway } from './services/twitch-bids.gateway';
 import { ConfigModule } from '@nestjs/config';
-import { TwitchRewardsService } from './services/twitch-rewards.service';
 import { TwitchPubSubService } from './services/twitch-pub-sub.service';
+import { TwitchRewardsModule } from './twitch-rewards.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([UserModel, TwitchAuthDataModel]),
     UserModule,
     ConfigModule,
+    TwitchRewardsModule,
   ],
-  providers: [
-    TwitchAuthService,
-    TwitchRewardsService,
-    TwitchPubSubService,
-    TwitchBidsGateway,
-  ],
+  providers: [TwitchAuthService, TwitchPubSubService, TwitchBidsGateway],
   controllers: [TwitchController],
+  exports: [TwitchAuthService],
 })
 export class TwitchModule {}

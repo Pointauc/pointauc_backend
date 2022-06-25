@@ -13,6 +13,7 @@ import { DaAuthModel } from './integration/da/models/da-auth.model';
 import { DaSettingsModel } from './integration/da/models/da-settings.model';
 import { SessionValidationMiddleware } from './core/middlewares/session-validation.middleware';
 import { ConfigModule } from '@nestjs/config';
+import { SettingsRestoreModule } from './old-settings-restore/settings-restore.module';
 
 @Module({
   imports: [
@@ -22,7 +23,6 @@ import { ConfigModule } from '@nestjs/config';
       host: 'localhost',
       port: 3306,
       username: 'root',
-      // password: 'Stroburus1',
       password: process.env.DB_PASSWORD,
       database: 'pointauc',
       models: [
@@ -35,11 +35,13 @@ import { ConfigModule } from '@nestjs/config';
         DaAuthModel,
       ],
       autoLoadModels: true,
+      logging: false,
     }),
     SequelizeModule.forFeature([UserModel]),
     UserModule,
     TwitchModule,
     DaModule,
+    SettingsRestoreModule,
   ],
   controllers: [AppController],
 })

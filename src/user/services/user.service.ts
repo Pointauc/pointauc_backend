@@ -7,7 +7,6 @@ import { AucSettingsModel } from '../models/auc-settings.model';
 import { TwitchAuthDataModel } from '../../integration/twitch/models/twitch-auth-data.model';
 import { TwitchSettingsModel } from '../../integration/twitch/models/twitch-settings.model';
 import { TwitchSettingsService } from '../../integration/twitch/services/twitch-settings.service';
-import { TwitchRewardPresetModel } from '../../integration/twitch/models/twitch-reward-preset.model';
 import { DaSettingsService } from '../../integration/da/services/da-settings.service';
 import { DaSettingsModel } from '../../integration/da/models/da-settings.model';
 import { DaAuthModel } from '../../integration/da/models/da-auth.model';
@@ -38,7 +37,7 @@ export class UserService {
       include: [
         AucSettingsModel,
         { model: TwitchAuthDataModel, attributes: ['username', 'id'] },
-        { model: TwitchSettingsModel, include: [TwitchRewardPresetModel] },
+        { model: TwitchSettingsModel, include: ['rewardPresets'] },
         { model: DaAuthModel, attributes: ['username', 'id'] },
         DaSettingsModel,
       ],

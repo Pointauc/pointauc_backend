@@ -8,6 +8,7 @@ import { TwitchRewardsService } from './twitch-rewards.service';
 import { getBidFromRedemption } from '../utils/twitch-redemptions.utils';
 import { getBidsRoom } from '../../abstract/utils/bids.utils';
 import { ITwitchRedemption } from '../dto/twitch-redemption.dto';
+import { TwitchSettingsModel } from '../models/twitch-settings.model';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -32,7 +33,7 @@ export class TwitchBidsGateway extends AbstractBidsGateway {
 
   async bidsConnect(channelId: string): Promise<void> {
     const queryOptions = {
-      include: [{ model: TwitchAuthDataModel, include: ['rewardPresets'] }],
+      include: [{ model: TwitchSettingsModel, include: ['rewardPresets'] }],
     };
     const {
       accessToken,

@@ -2,20 +2,31 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { TwitchSettingsModel } from '../models/twitch-settings.model';
 import { TwitchRewardPresetModel } from '../models/twitch-reward-preset.model';
-import { TwitchSettingsDto } from '../dto/twitch-auth.dto';
+import {
+  TwitchRewardPresetDto,
+  TwitchSettingsDto,
+} from '../dto/twitch-auth.dto';
+import { TwitchAuthDataModel } from '../models/twitch-auth-data.model';
+import { TwitchRewardsService } from './twitch-rewards.service';
+import { UserModel } from '../../../user/models/user.model';
 
 const initialReward = {
-  cost: 1000,
-  color: '#ffffff',
+  cost: 5000,
+  color: '#F57D07',
 };
 
 @Injectable()
 export class TwitchSettingsService {
   constructor(
+    @InjectModel(UserModel)
+    private userModel: typeof UserModel,
     @InjectModel(TwitchSettingsModel)
     private twitchSettingsModel: typeof TwitchSettingsModel,
+    @InjectModel(TwitchAuthDataModel)
+    private twitchAuthDataModel: typeof TwitchAuthDataModel,
     @InjectModel(TwitchRewardPresetModel)
     private twitchRewardPresetModel: typeof TwitchRewardPresetModel,
+    private twitchRewardsService: TwitchRewardsService,
   ) {}
 
   async create(userId: number): Promise<void> {
@@ -40,6 +51,29 @@ export class TwitchSettingsService {
 
       await this.twitchRewardPresetModel.destroy({ where: { userId } });
       await this.twitchRewardPresetModel.bulkCreate(newPresets);
+
+      try {
+        await this.updatePresets(userId, rewardPresets);
+      } catch (e) {}
     }
+  }
+
+  async updatePresets(
+    userId: number,
+    rewardPresets: TwitchRewardPresetDto[],
+  ): Promise<void> {
+    const {
+      twitchAuth: { accessToken, id },
+      twitchSettings: { rewardsPrefix },
+    } = await this.userModel.findByPk(userId, {
+      include: ['twitchAuth', 'twitchSettings'],
+    });
+
+    await this.twitchRewardsService.refreshRewards(
+      rewardPresets,
+      rewardsPrefix,
+      accessToken,
+      id,
+    );
   }
 }

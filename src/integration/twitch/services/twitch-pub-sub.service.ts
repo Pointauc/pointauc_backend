@@ -104,6 +104,7 @@ export class TwitchPubSubService {
   };
 
   private onPubSubClose = (reject: any) => {
+    console.log('twitch pub sub closed');
     if (this.pingHandle) {
       clearInterval(this.pingHandle);
     }

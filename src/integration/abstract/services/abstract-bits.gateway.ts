@@ -28,12 +28,12 @@ export abstract class AbstractBidsGateway
   onRoomCreate = async (roomKey: string): Promise<void> => {
     if (isBidsRoom(roomKey)) {
       try {
+        console.log('try connect');
         await this.bidsConnect(getIdFromBidsRoom(roomKey));
 
         this.readyRooms.add(roomKey);
         this.server.to(roomKey).emit('bidsStateChange', { state: true });
       } catch (e) {
-        console.log(e);
         this.server
           .to(roomKey)
           .emit('bidsStateChange', { error: 'unknownError', state: false });
@@ -44,9 +44,11 @@ export abstract class AbstractBidsGateway
 
   onRoomDelete = async (roomKey: string): Promise<void> => {
     if (isBidsRoom(roomKey)) {
-      await this.bidsDisconnect(getIdFromBidsRoom(roomKey));
+      try {
+        await this.bidsDisconnect(getIdFromBidsRoom(roomKey));
 
-      this.readyRooms.delete(roomKey);
+        this.readyRooms.delete(roomKey);
+      } catch (e) {}
     }
   };
 
