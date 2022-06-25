@@ -11,15 +11,9 @@ export class TwitchController {
     @Body('code') code: string,
     @Session() session: UserSession,
   ): Promise<void> {
-    console.log('twitch auth');
-    console.log(session);
-    const userId = await this.twitchAuthService.authorize(
+    session.userId = await this.twitchAuthService.authorize(
       { code },
       session.userId,
     );
-
-    console.log(userId);
-
-    session.userId = userId;
   }
 }

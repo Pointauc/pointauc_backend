@@ -1,27 +1,77 @@
 import {
   ConnectedSocket,
   OnGatewayConnection,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketServer,
-  WsResponse,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Namespace, Socket } from 'socket.io';
 import { userCookieSession } from '../../../core/constants/userCookieSession.constants';
-import { InjectModel } from '@nestjs/sequelize';
-import { UserModel } from '../../../user/models/user.model';
+import {
+  getBidsRoom,
+  getIdFromBidsRoom,
+  isBidsRoom,
+} from '../utils/bids.utils';
 
-export class AbstractBidsGateway implements OnGatewayConnection {
+export abstract class AbstractBidsGateway
+  implements OnGatewayConnection, OnGatewayInit
+{
   @WebSocketServer()
-  server: Server;
+  server: Namespace;
 
-  constructor(@InjectModel(UserModel) private userModel: typeof UserModel) {}
+  private readyRooms = new Set<string>();
 
-  @SubscribeMessage('test')
-  handleTest(@ConnectedSocket() client: Socket): WsResponse {
-    return { event: 'test event', data: 'ok hdfghdh' };
+  abstract getRoomId(userId: number): string | Promise<string>;
+  abstract bidsConnect(id: string): Promise<void> | void;
+  abstract bidsDisconnect(id: string): Promise<void> | void;
+
+  onRoomCreate = async (roomKey: string): Promise<void> => {
+    if (isBidsRoom(roomKey)) {
+      try {
+        await this.bidsConnect(getIdFromBidsRoom(roomKey));
+
+        this.readyRooms.add(roomKey);
+        this.server.to(roomKey).emit('bidsStateChange', { state: true });
+      } catch (e) {
+        console.log(e);
+        this.server
+          .to(roomKey)
+          .emit('bidsStateChange', { error: 'unknownError', state: false });
+        this.server.socketsLeave(roomKey);
+      }
+    }
+  };
+
+  onRoomDelete = async (roomKey: string): Promise<void> => {
+    if (isBidsRoom(roomKey)) {
+      await this.bidsDisconnect(getIdFromBidsRoom(roomKey));
+
+      this.readyRooms.delete(roomKey);
+    }
+  };
+
+  @SubscribeMessage('bidsSubscribe')
+  async subscribe(@ConnectedSocket() client: Socket) {
+    const id = await this.getRoomId(client.data.userId);
+    const room = getBidsRoom(id);
+
+    if (this.readyRooms.has(room)) {
+      client.emit('bidsStateChange', { state: true });
+    }
+
+    client.join(room);
   }
 
-  async handleConnection(client: Socket, ...args: any[]): Promise<void> {
+  @SubscribeMessage('bidsUnsubscribe')
+  async unsubscribe(@ConnectedSocket() client: Socket) {
+    const id = await this.getRoomId(client.data.userId);
+
+    client.leave(getBidsRoom(id));
+
+    return { event: 'bidsStateChange', data: { state: false } };
+  }
+
+  async handleConnection(client: Socket): Promise<void> {
     const cookie = client.handshake.query.cookie;
     const req = {
       connection: { encrypted: false },
@@ -31,14 +81,15 @@ export class AbstractBidsGateway implements OnGatewayConnection {
 
     await new Promise((resolve) =>
       userCookieSession(req, res, async () => {
-        const user = await this.userModel.findByPk(req.session.userId);
-
-        if (!user) {
-          client.disconnect();
-        }
+        client.data.userId = req.session.userId;
 
         resolve(null);
       }),
     );
+  }
+
+  afterInit(server: any): any {
+    server.adapter.on('create-room', this.onRoomCreate);
+    server.adapter.on('delete-room', this.onRoomDelete);
   }
 }

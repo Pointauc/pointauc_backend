@@ -6,6 +6,7 @@ import { DaAuthService } from './services/da-auth.service';
 import { DaAuthModel } from './models/da-auth.model';
 import { UserModel } from '../../user/models/user.model';
 import { ConfigModule } from '@nestjs/config';
+import { DaBidsGateway } from './services/da-bids.gateway';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { ConfigModule } from '@nestjs/config';
     UserModule,
     ConfigModule,
   ],
-  providers: [DaAuthService],
+  providers: [DaAuthService, DaBidsGateway],
   controllers: [DaController],
 })
 export class DaModule {}

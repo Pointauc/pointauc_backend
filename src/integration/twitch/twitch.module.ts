@@ -7,6 +7,8 @@ import { UserModule } from '../../user/user.module';
 import { UserModel } from '../../user/models/user.model';
 import { TwitchBidsGateway } from './services/twitch-bids.gateway';
 import { ConfigModule } from '@nestjs/config';
+import { TwitchRewardsService } from './services/twitch-rewards.service';
+import { TwitchPubSubService } from './services/twitch-pub-sub.service';
 
 @Module({
   imports: [
@@ -14,7 +16,12 @@ import { ConfigModule } from '@nestjs/config';
     UserModule,
     ConfigModule,
   ],
-  providers: [TwitchAuthService, TwitchBidsGateway],
+  providers: [
+    TwitchAuthService,
+    TwitchRewardsService,
+    TwitchPubSubService,
+    TwitchBidsGateway,
+  ],
   controllers: [TwitchController],
 })
 export class TwitchModule {}

@@ -16,10 +16,6 @@ export class DaController {
     @Body() body: IAuthBody,
     @Session() session: UserSession,
   ): Promise<void> {
-    const userId = await this.daAuthService.authorize(body, session.userId);
-
-    console.log(userId);
-
-    session.userId = userId;
+    session.userId = await this.daAuthService.authorize(body, session.userId);
   }
 }

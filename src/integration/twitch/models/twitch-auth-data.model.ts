@@ -1,5 +1,6 @@
-import { Column, DataType, Table } from 'sequelize-typescript';
+import { BelongsTo, Column, DataType, Table } from 'sequelize-typescript';
 import { AbstractOauthTokenModel } from '../../abstract/models/abstract-oauth-token.model';
+import { TwitchSettingsModel } from './twitch-settings.model';
 
 @Table({
   createdAt: false,
@@ -10,4 +11,7 @@ import { AbstractOauthTokenModel } from '../../abstract/models/abstract-oauth-to
 export class TwitchAuthDataModel extends AbstractOauthTokenModel {
   @Column(DataType.JSON) scope: string[];
   @Column tokenType: string;
+
+  @BelongsTo(() => TwitchSettingsModel, 'userId')
+  settings?: TwitchSettingsModel;
 }
