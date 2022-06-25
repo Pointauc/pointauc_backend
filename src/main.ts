@@ -11,7 +11,7 @@ if (!global.XMLHttpRequest) global.XMLHttpRequest = require('xhr2');
 if (!global.WebSocket) global.WebSocket = require('ws');
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { cors: { origin: '*' } });
 
   app.use(userCookieSession);
 
