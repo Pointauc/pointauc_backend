@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import { WebSocket, MessageEvent } from 'ws';
 import { ITwitchRedemption } from '../dto/twitch-redemption.dto';
+import { TwitchPubSubMessage } from '../dto/twitch-pub-sub.dto';
 
 export const TWITCH_TOPICS = {
   REDEMPTIONS: 'channel-points-channel-v1',
@@ -15,12 +16,19 @@ export enum REQUEST_MESSAGE_TYPE {
 
 interface TwitchPubSubRequestMessageInterface {
   type: REQUEST_MESSAGE_TYPE;
+  nonce: string;
   data?: {
     [k: string]: string;
   };
 }
 
+interface Callbacks {
+  onSuccess: (data: TwitchPubSubMessage) => void;
+  onError: () => void;
+}
+
 const PING_INTERVAL = 1000 * 10;
+const SOCKET_MAX_LISTENERS = 45;
 
 @Injectable()
 export class TwitchPubSubService {
@@ -36,10 +44,10 @@ export class TwitchPubSubService {
       console.log('[TwitchPubSub] connecting');
       const resolveEmpty = () => resolve(null);
 
-      this.ws.onopen = this.onOpen.bind(this, resolveEmpty);
-      this.ws.onerror = this.onPubSubError;
-      this.ws.onmessage = this.onPubSubResponse;
-      this.ws.onclose = this.onPubSubClose.bind(this, reject);
+      this.ws.addEventListener('open', this.onOpen.bind(this, resolveEmpty));
+      this.ws.addEventListener('error', this.onPubSubError);
+      this.ws.addEventListener('message', this.onPubSubResponse);
+      this.ws.addEventListener('close', this.onPubSubClose.bind(this, reject));
     });
   }
 
@@ -54,9 +62,15 @@ export class TwitchPubSubService {
       await this.connect();
     }
 
-    this.sendMessage(REQUEST_MESSAGE_TYPE.LISTEN, {
-      topics: [`${topic}.${channelId}`],
-      auth_token: accessToken,
+    return new Promise((resolve, reject) => {
+      this.sendMessage(
+        REQUEST_MESSAGE_TYPE.LISTEN,
+        {
+          topics: [`${topic}.${channelId}`],
+          auth_token: accessToken,
+        },
+        { onError: reject, onSuccess: resolve },
+      );
     });
   }
 
@@ -84,9 +98,15 @@ export class TwitchPubSubService {
     resolve();
   };
 
-  private sendMessage(type: REQUEST_MESSAGE_TYPE, payload?: any) {
+  private sendMessage(
+    type: REQUEST_MESSAGE_TYPE,
+    payload?: any,
+    callbacks?: Callbacks,
+  ) {
+    const nonce = Math.random().toString();
     const message: TwitchPubSubRequestMessageInterface = {
       type: type,
+      nonce,
     };
     if (payload) {
       message.data = {
@@ -95,6 +115,20 @@ export class TwitchPubSubService {
     }
 
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      if (callbacks) {
+        const { onSuccess, onError } = callbacks;
+        const callback = (event: MessageEvent) => {
+          const data = this.parsePubSubResponse(event);
+
+          if (data.nonce === nonce) {
+            data.error ? onError() : onSuccess(data);
+            this.ws.removeEventListener('message', callback);
+          }
+        };
+
+        this.ws.addEventListener('message', callback);
+      }
+
       this.ws.send(JSON.stringify(message));
     }
   }
@@ -108,20 +142,26 @@ export class TwitchPubSubService {
     if (this.pingHandle) {
       clearInterval(this.pingHandle);
     }
+    this.ws = undefined;
     reject();
   };
 
-  private onPubSubResponse = (event: MessageEvent) => {
-    const twitchPubSubMessage = JSON.parse(event.data as string);
-    const { data } = twitchPubSubMessage;
-    console.log(`[PubSub Response Type] ${twitchPubSubMessage.type}`);
+  private parsePubSubResponse = (event: MessageEvent): TwitchPubSubMessage => {
+    return JSON.parse(event.data as string);
+  };
 
-    if (twitchPubSubMessage.error === 'ERR_BADAUTH') {
+  private onPubSubResponse = (event: MessageEvent) => {
+    const twitchPubSubMessage = this.parsePubSubResponse(event);
+    const { data, type, error } = twitchPubSubMessage;
+    // console.log(twitchPubSubMessage);
+    console.log(`[PubSub Response Type] ${type}`);
+
+    if (error === 'ERR_BADAUTH') {
       console.log(twitchPubSubMessage);
       return;
     }
 
-    if (data && twitchPubSubMessage.type === 'Message') {
+    if (data && type === 'MESSAGE') {
       this.handleMessage(data.topic, JSON.parse(data.message));
     }
   };
@@ -130,7 +170,7 @@ export class TwitchPubSubService {
     const [type] = topic.split('.');
 
     if (type === 'channel-points-channel-v1') {
-      this.$redemption.next(message.data);
+      this.$redemption.next(message.data.redemption);
     }
   }
 }

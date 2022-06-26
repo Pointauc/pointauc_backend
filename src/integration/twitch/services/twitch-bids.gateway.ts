@@ -67,7 +67,6 @@ export class TwitchBidsGateway extends AbstractBidsGateway {
   override afterInit(server: any): any {
     super.afterInit(server);
 
-    this.twitchPubSubService.connect();
     this.twitchPubSubService.$redemption.subscribe(this.handleRedemption);
   }
 }
