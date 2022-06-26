@@ -53,7 +53,23 @@ export class DaAuthService extends AbstractOauthService {
     return { id, username, socketConnectionToken };
   }
 
-  refreshToken(userId: number): Promise<IOauthToken> {
-    return Promise.resolve(undefined);
+  async refreshToken(userId: number): Promise<IOauthToken> {
+    const params = await this.getRefreshTokenParams(userId);
+    const { data } = await axios.post(
+      'https://www.donationalerts.com/oauth/token',
+      params,
+    );
+
+    return data;
+  }
+
+  async validateToken(token: string): Promise<boolean> {
+    try {
+      await this.getUserData(token);
+
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }

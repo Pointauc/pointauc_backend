@@ -11,6 +11,8 @@ import { TwitchSettingsService } from '../../integration/twitch/services/twitch-
 import { AucSettingsService } from '../services/auc-settings.service';
 import { AucSettingsDto } from '../dto/auc-settings.dto';
 import { DaSettingsService } from '../../integration/da/services/da-settings.service';
+import { TwitchAuthService } from '../../integration/twitch/services/twitch-auth.service';
+import { DaAuthService } from '../../integration/da/services/da-auth.service';
 
 @Controller('user')
 @UseGuards(new AuthGuard(UserModel))
@@ -20,11 +22,38 @@ export class UserController {
     private twitchSettingsService: TwitchSettingsService,
     private daSettingsService: DaSettingsService,
     private aucSettingsService: AucSettingsService,
+    private twitchAuthService: TwitchAuthService,
+    private daAuthService: DaAuthService,
   ) {}
+
+  async doTokenValidation(
+    userId: number,
+    { twitchAuth, daAuth }: GetUserDto,
+  ): Promise<void> {
+    await Promise.all([
+      twitchAuth
+        ? this.twitchAuthService.validateAndUpdateToken(userId)
+        : Promise.resolve(),
+      daAuth
+        ? this.daAuthService.validateAndUpdateToken(userId)
+        : Promise.resolve(),
+    ]);
+  }
 
   @Get()
   async getUser(@Session() { userId }: UserSession): Promise<GetUserDto> {
-    return this.userService.getUserData(userId);
+    const user = await this.userService.getUserData(userId);
+
+    await this.doTokenValidation(userId, user);
+
+    return user;
+  }
+
+  @Get('integration/validate')
+  async validateIntegration(@Session() { userId }: UserSession) {
+    const user = await this.userService.getUserData(userId);
+
+    await this.doTokenValidation(userId, user);
   }
 
   @Put('settings/integration')

@@ -2,7 +2,6 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { UserModel } from './user/models/user.model';
-import { UserModule } from './user/user.module';
 import { AucSettingsModel } from './user/models/auc-settings.model';
 import { TwitchSettingsModel } from './integration/twitch/models/twitch-settings.model';
 import { TwitchAuthDataModel } from './integration/twitch/models/twitch-auth-data.model';
@@ -14,6 +13,7 @@ import { DaSettingsModel } from './integration/da/models/da-settings.model';
 import { SessionValidationMiddleware } from './core/middlewares/session-validation.middleware';
 import { ConfigModule } from '@nestjs/config';
 import { SettingsRestoreModule } from './old-settings-restore/settings-restore.module';
+import { UserApiModule } from './user/user-api.module';
 
 @Module({
   imports: [
@@ -38,7 +38,7 @@ import { SettingsRestoreModule } from './old-settings-restore/settings-restore.m
       logging: false,
     }),
     SequelizeModule.forFeature([UserModel]),
-    UserModule,
+    UserApiModule,
     TwitchModule,
     DaModule,
     SettingsRestoreModule,

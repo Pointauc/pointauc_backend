@@ -4,6 +4,7 @@ import { DaSettingsDto } from '../../integration/da/dto/da-settings.dto';
 
 export interface IntegrationDataDto {
   username: string;
+  id: string;
 }
 
 export interface GetUserDto {

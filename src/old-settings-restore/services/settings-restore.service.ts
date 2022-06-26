@@ -15,7 +15,6 @@ export class SettingsRestoreService {
   }
 
   private async connectMongoDb(): Promise<void> {
-    console.log('connecting');
     await mongoose.connect(this.config.get('MONGODB_ATLAS_CONNECTION_URL'));
 
     const connection = mongoose.connection;

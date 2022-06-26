@@ -37,8 +37,8 @@ export class UserService {
       include: [
         AucSettingsModel,
         { model: TwitchAuthDataModel, attributes: ['username', 'id'] },
-        { model: TwitchSettingsModel, include: ['rewardPresets'] },
         { model: DaAuthModel, attributes: ['username', 'id'] },
+        { model: TwitchSettingsModel, include: ['rewardPresets'] },
         DaSettingsModel,
       ],
       attributes: { exclude: ['twitchAuthId', 'daAuthId'] },

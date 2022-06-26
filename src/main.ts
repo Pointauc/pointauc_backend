@@ -23,6 +23,7 @@ async function bootstrap() {
 
   axios.interceptors.response.use(undefined, (error) => {
     console.log(error.response.data);
+    console.log(error.response.config.url);
 
     throw new HttpException(error.response.data, error.response.status);
   });

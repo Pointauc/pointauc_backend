@@ -69,9 +69,27 @@ export class TwitchAuthService extends AbstractOauthService {
   }
 
   async refreshToken(userId: number): Promise<IOauthToken> {
+    console.log('refreshing token');
     const params = await this.getRefreshTokenParams(userId);
-    const { data } = await axios.post('', {}, { params });
+    const { data } = await axios.post(
+      'https://id.twitch.tv/oauth2/token',
+      undefined,
+      { params, responseType: 'json' },
+    );
 
     return data;
+  }
+
+  async validateToken(token: string): Promise<boolean> {
+    try {
+      // await axios.get('https://id.twitch.tv/oauth2/validate', {
+      //   headers: { Authorization: `OAuth ${token}` },
+      // });
+      await this.getUserData(token);
+
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }

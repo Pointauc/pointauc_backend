@@ -16,5 +16,6 @@ import { DaBidsGateway } from './services/da-bids.gateway';
   ],
   providers: [DaAuthService, DaBidsGateway],
   controllers: [DaController],
+  exports: [DaAuthService],
 })
 export class DaModule {}

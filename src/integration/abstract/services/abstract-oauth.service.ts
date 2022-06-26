@@ -10,6 +10,7 @@ import { UserService } from '../../../user/services/user.service';
 import { UserModel } from '../../../user/models/user.model';
 import { CreateUserDto } from '../../../user/dto/user.dto';
 import { ConfigService } from '@nestjs/config';
+import { camelizeKeys } from '../../../core/utils/object.utils';
 
 const grantType = {
   authToken: 'authorization_code',
@@ -20,6 +21,10 @@ export abstract class AbstractOauthService {
   abstract integrationKey: string;
   abstract redirectUri?: string;
   abstract userTokenKey: keyof CreateUserDto;
+
+  get userAuthDataKey(): string {
+    return this.userTokenKey.slice(0, -2);
+  }
 
   get appCredentials(): IAppCredentials {
     return {
@@ -56,20 +61,19 @@ export abstract class AbstractOauthService {
   }
 
   async getRefreshToken(userId: number): Promise<string> {
-    const { refreshToken } = await this.tokenModel.findOne({
-      where: { userId },
-      attributes: ['refreshToken'],
+    const userData: any = await this.user.findByPk(userId, {
+      include: [this.userAuthDataKey],
     });
 
-    return refreshToken;
+    return userData[this.userAuthDataKey].refreshToken;
   }
 
   async getRefreshTokenParams(userId: number): Promise<any> {
     return {
-      refresh_token: await this.getRefreshToken(userId),
-      grant_type: grantType.refreshToken,
       client_id: this.appCredentials.clientId,
       client_secret: this.appCredentials.clientSecret,
+      grant_type: grantType.refreshToken,
+      refresh_token: await this.getRefreshToken(userId),
     };
   }
 
@@ -91,9 +95,12 @@ export abstract class AbstractOauthService {
   }
 
   async refreshAndUpdateToken(userId: number): Promise<void> {
-    const tokenData = this.refreshToken(userId);
+    const tokenData = await this.refreshToken(userId);
+    const userData = await this.user.findByPk(userId);
 
-    await this.tokenModel.update(tokenData as any, { where: { userId } });
+    await this.tokenModel.update(camelizeKeys(tokenData), {
+      where: { id: userData[this.userTokenKey] },
+    });
   }
 
   async setUserAuthId(userId: number, id: string): Promise<void> {
@@ -133,9 +140,26 @@ export abstract class AbstractOauthService {
     return userId || modelData.userId;
   }
 
+  async validateAndUpdateToken(userId: number): Promise<void> {
+    const user = await this.user.findByPk(userId, {
+      include: [this.userAuthDataKey],
+    });
+    const isValid = await this.validateToken(
+      user[this.userAuthDataKey]?.accessToken,
+    );
+
+    if (!isValid) {
+      try {
+        await this.refreshAndUpdateToken(userId);
+      } catch (e) {}
+    }
+  }
+
   abstract getToken(extraParams: any): Promise<IOauthToken>;
 
   abstract refreshToken(userId: number): Promise<IOauthToken>;
 
   abstract getUserData(token: string): Promise<IOauthUserData>;
+
+  abstract validateToken(token: string): Promise<boolean>;
 }
