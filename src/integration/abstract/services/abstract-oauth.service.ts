@@ -77,7 +77,11 @@ export abstract class AbstractOauthService {
     };
   }
 
-  async authorize(params: any, userId?: number): Promise<number> {
+  async authorize(
+    params: any,
+    userId?: number,
+    nonce?: string,
+  ): Promise<number> {
     const tokenData = await this.getToken(params);
     const userData = await this.getUserData(tokenData.accessToken);
     const modelData: AuthDataDto = { ...tokenData, ...userData };
@@ -90,8 +94,9 @@ export abstract class AbstractOauthService {
       ? await this.updateAuthData(
           { ...modelData, userId: savedData.userId },
           userId,
+          nonce,
         )
-      : await this.createAuthData(modelData, userId);
+      : await this.createAuthData(modelData, userId, nonce);
   }
 
   async refreshAndUpdateToken(userId: number): Promise<void> {
@@ -110,8 +115,10 @@ export abstract class AbstractOauthService {
   async createAuthData(
     modelData: AuthDataDto,
     userId?: number,
+    nonce?: string,
   ): Promise<number> {
-    const affectedUserId = userId || (await this.userService.createUser());
+    const affectedUserId =
+      userId || (await this.userService.createUser({}, nonce));
     const data = { ...modelData, userId: userId ? null : affectedUserId };
     const { id } = await this.tokenModel.create(data, { returning: ['id'] });
     await this.setUserAuthId(affectedUserId, id);
@@ -122,13 +129,17 @@ export abstract class AbstractOauthService {
   async updateAuthData(
     modelData: AuthDataDto,
     userId?: number,
+    nonce?: string,
   ): Promise<number> {
     const shouldCreateUser = !userId && !modelData.userId;
 
     if (shouldCreateUser) {
-      modelData.userId = await this.userService.createUser({
-        [this.userTokenKey]: modelData.id,
-      });
+      modelData.userId = await this.userService.createUser(
+        {
+          [this.userTokenKey]: modelData.id,
+        },
+        nonce,
+      );
     }
 
     if (userId) {

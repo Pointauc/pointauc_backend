@@ -4,14 +4,24 @@ import { ConfigService } from '@nestjs/config';
 import User, { IUser } from '../models/user';
 import { TwitchAuthService } from '../../integration/twitch/services/twitch-auth.service';
 import { TwitchAuthData } from '../../integration/twitch/dto/twitch-auth.dto';
+import { AucSettingsService } from '../../user/services/auc-settings.service';
+import { TwitchSettingsService } from '../../integration/twitch/services/twitch-settings.service';
+import { DaSettingsService } from '../../integration/da/services/da-settings.service';
 
 @Injectable()
 export class SettingsRestoreService {
   constructor(
     private config: ConfigService,
     private twitchAuthService: TwitchAuthService,
+    private aucSettingsService: AucSettingsService,
+    private twitchSettingsService: TwitchSettingsService,
+    private daSettingsService: DaSettingsService,
   ) {
     this.connectMongoDb();
+  }
+
+  async getUser(channelId: string): Promise<IUser> {
+    return User.findOne({ channelId });
   }
 
   private async connectMongoDb(): Promise<void> {
@@ -25,8 +35,10 @@ export class SettingsRestoreService {
     connection.on('open', () => console.log('mongoose connected'));
   }
 
-  async getUser(channelId: string): Promise<IUser> {
-    return User.findOne({ channelId });
+  async hasUser(channelId: string): Promise<boolean> {
+    const res = await User.exists({ channelId });
+
+    return !!res;
   }
 
   async cloneUserIntegration(channelId: string): Promise<number> {
@@ -52,5 +64,27 @@ export class SettingsRestoreService {
     };
 
     return await this.twitchAuthService.createAuthData(authData);
+  }
+
+  async restoreSettings(channelId: string, userId: number): Promise<void> {
+    const {
+      settings,
+      integration: {
+        twitch: { rewards, ...twitch },
+        da,
+      },
+    } = await this.getUser(channelId);
+
+    await Promise.all([
+      this.aucSettingsService.update(
+        userId,
+        JSON.parse(JSON.stringify(settings)),
+      ),
+      this.twitchSettingsService.update(
+        userId,
+        JSON.parse(JSON.stringify({ ...twitch, rewardPresets: rewards })),
+      ),
+      this.daSettingsService.update(userId, JSON.parse(JSON.stringify(da))),
+    ]);
   }
 }

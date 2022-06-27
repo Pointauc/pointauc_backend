@@ -26,7 +26,7 @@ export class AucSettingsModel extends Model {
   @Default(false) @Column isAutoincrementActive: boolean;
   @Default(30) @Column autoincrementTime: number;
   @Default(true) @Column isBuyoutVisible: boolean;
-  @Default(null) @Column(DataType.TEXT) background: string;
+  @Default(null) @Column(DataType.TEXT('long')) background: string;
   @Default(0) @Column purchaseSort: number;
   @Default(false) @Column marblesAuc: boolean;
   @Default(50) @Column marbleRate: number;

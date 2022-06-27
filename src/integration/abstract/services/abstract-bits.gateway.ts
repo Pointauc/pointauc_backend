@@ -36,7 +36,7 @@ export abstract class AbstractBidsGateway
       } catch (e) {
         this.server
           .to(roomKey)
-          .emit('bidsStateChange', { error: 'unknownError', state: false });
+          .emit('bidsStateChange', { error: e.message, state: false });
         this.server.socketsLeave(roomKey);
       }
     }

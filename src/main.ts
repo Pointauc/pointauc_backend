@@ -4,6 +4,7 @@ import axios from 'axios';
 import { userCookieSession } from './core/constants/userCookieSession.constants';
 import { LoggingInterceptor } from './core/services/logging.interceptor';
 import { HttpException } from '@nestjs/common';
+import * as bodyParser from 'body-parser';
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -17,6 +18,8 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new LoggingInterceptor());
 
+  app.use(bodyParser.json({ limit: '50mb' }));
+  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
   app.use(userCookieSession);
 
   app.setGlobalPrefix('api');

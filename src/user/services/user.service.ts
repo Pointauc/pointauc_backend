@@ -10,9 +10,12 @@ import { TwitchSettingsService } from '../../integration/twitch/services/twitch-
 import { DaSettingsService } from '../../integration/da/services/da-settings.service';
 import { DaSettingsModel } from '../../integration/da/models/da-settings.model';
 import { DaAuthModel } from '../../integration/da/models/da-auth.model';
+import { Subject } from 'rxjs';
 
 @Injectable()
 export class UserService {
+  $userCreated = new Subject<string>();
+
   constructor(
     @InjectModel(UserModel) private user: typeof UserModel,
     private aucSettingsService: AucSettingsService,
@@ -20,14 +23,16 @@ export class UserService {
     private daSettingsService: DaSettingsService,
   ) {}
 
-  async createUser(data: CreateUserDto = {}): Promise<number> {
+  async createUser(data: CreateUserDto = {}, nonce?: string): Promise<number> {
     const { userId } = await this.user.create(data, { returning: ['userId'] });
 
     await Promise.all([
-      await this.aucSettingsService.create(userId),
-      await this.twitchSettingsService.create(userId),
-      await this.daSettingsService.create(userId),
+      this.aucSettingsService.create(userId),
+      this.twitchSettingsService.create(userId),
+      this.daSettingsService.create(userId),
     ]);
+
+    this.$userCreated.next(nonce);
 
     return userId;
   }

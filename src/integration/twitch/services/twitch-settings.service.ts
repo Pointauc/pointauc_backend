@@ -31,8 +31,8 @@ export class TwitchSettingsService {
 
   async create(userId: number): Promise<void> {
     await Promise.all([
-      await this.twitchSettingsModel.create({ userId }),
-      await this.twitchRewardPresetModel.create({ ...initialReward, userId }),
+      this.twitchSettingsModel.create({ userId }),
+      this.twitchRewardPresetModel.create({ ...initialReward, userId }),
     ]);
   }
 
