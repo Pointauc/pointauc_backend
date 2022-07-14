@@ -11,6 +11,7 @@ import { DaSettingsService } from '../../integration/da/services/da-settings.ser
 import { DaSettingsModel } from '../../integration/da/models/da-settings.model';
 import { DaAuthModel } from '../../integration/da/models/da-auth.model';
 import { Subject } from 'rxjs';
+import { SequelizeUtils } from '../../core/utils/sequelize.utils';
 
 @Injectable()
 export class UserService {
@@ -41,8 +42,22 @@ export class UserService {
     return this.user.findByPk(id, {
       include: [
         AucSettingsModel,
-        { model: TwitchAuthDataModel, attributes: ['username', 'id'] },
-        { model: DaAuthModel, attributes: ['username', 'id'] },
+        {
+          model: TwitchAuthDataModel,
+          attributes: [
+            'username',
+            'id',
+            [SequelizeUtils.toBoolean('twitchAuth.accessToken'), 'isValid'],
+          ],
+        },
+        {
+          model: DaAuthModel,
+          attributes: [
+            'username',
+            'id',
+            [SequelizeUtils.toBoolean('daAuth.accessToken'), 'isValid'],
+          ],
+        },
         { model: TwitchSettingsModel, include: ['rewardPresets'] },
         DaSettingsModel,
       ],

@@ -17,7 +17,7 @@ export class AbstractOauthTokenModel extends Model<AbstractOauthTokenModel> {
   userId: number;
 
   @Column username: string;
-  @Column(DataType.TEXT) accessToken: string;
-  @Column expiresIn: number;
-  @Column(DataType.TEXT) refreshToken: string;
+  @AllowNull @Column(DataType.TEXT) accessToken: string;
+  @AllowNull @Column expiresIn: number;
+  @AllowNull @Column(DataType.TEXT) refreshToken: string;
 }

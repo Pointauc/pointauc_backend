@@ -13,11 +13,13 @@ import { AucSettingsDto } from '../dto/auc-settings.dto';
 import { DaSettingsService } from '../../integration/da/services/da-settings.service';
 import { TwitchAuthService } from '../../integration/twitch/services/twitch-auth.service';
 import { DaAuthService } from '../../integration/da/services/da-auth.service';
+import { InjectModel } from '@nestjs/sequelize';
 
 @Controller('user')
 @UseGuards(new AuthGuard(UserModel))
 export class UserController {
   constructor(
+    @InjectModel(UserModel) private user: typeof UserModel,
     private userService: UserService,
     private twitchSettingsService: TwitchSettingsService,
     private daSettingsService: DaSettingsService,
@@ -28,13 +30,13 @@ export class UserController {
 
   async doTokenValidation(
     userId: number,
-    { twitchAuth, daAuth }: GetUserDto,
+    { twitchAuthId, daAuthId }: UserModel,
   ): Promise<void> {
     await Promise.all([
-      twitchAuth
+      twitchAuthId
         ? this.twitchAuthService.validateAndUpdateToken(userId)
         : Promise.resolve(),
-      daAuth
+      daAuthId
         ? this.daAuthService.validateAndUpdateToken(userId)
         : Promise.resolve(),
     ]);
@@ -42,16 +44,16 @@ export class UserController {
 
   @Get()
   async getUser(@Session() { userId }: UserSession): Promise<GetUserDto> {
-    const user = await this.userService.getUserData(userId);
+    const user = await this.user.findByPk(userId);
 
     await this.doTokenValidation(userId, user);
 
-    return user;
+    return this.userService.getUserData(userId);
   }
 
   @Get('integration/validate')
   async validateIntegration(@Session() { userId }: UserSession) {
-    const user = await this.userService.getUserData(userId);
+    const user = await this.user.findByPk(userId);
 
     await this.doTokenValidation(userId, user);
   }

@@ -117,12 +117,23 @@ export abstract class AbstractOauthService {
     userId?: number,
     nonce?: string,
   ): Promise<number> {
-    const affectedUserId =
-      userId || (await this.userService.createUser({}, nonce));
-    const data = { ...modelData, userId: userId ? null : affectedUserId };
+    let affectedUserId;
+    let data;
+
+    if (userId) {
+      // Add to existed user as SECONDARY integration
+      affectedUserId = userId;
+
+      data = { ...modelData, userId: null };
+    } else {
+      // Create new user as PRIMARY integration
+      affectedUserId = await this.userService.createUser({}, nonce);
+
+      data = { ...modelData, userId: affectedUserId };
+    }
+
     const { id } = await this.tokenModel.create(data, { returning: ['id'] });
     await this.setUserAuthId(affectedUserId, id);
-
     return affectedUserId;
   }
 
@@ -155,15 +166,23 @@ export abstract class AbstractOauthService {
     const user = await this.user.findByPk(userId, {
       include: [this.userAuthDataKey],
     });
-    const isValid = await this.validateToken(
-      user[this.userAuthDataKey]?.accessToken,
-    );
+    const { accessToken, id } = user[this.userAuthDataKey] || {};
+    const isValid = await this.validateToken(accessToken);
 
     if (!isValid) {
       try {
         await this.refreshAndUpdateToken(userId);
-      } catch (e) {}
+      } catch (e) {
+        await this.removeIntegration(id);
+      }
     }
+  }
+
+  private async removeIntegration(id: string) {
+    await this.tokenModel.update(
+      { accessToken: null, refreshToken: null, expiresIn: null },
+      { where: { id } },
+    );
   }
 
   abstract getToken(extraParams: any): Promise<IOauthToken>;
