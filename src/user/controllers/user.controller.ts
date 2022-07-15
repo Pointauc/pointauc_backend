@@ -14,6 +14,7 @@ import { DaSettingsService } from '../../integration/da/services/da-settings.ser
 import { TwitchAuthService } from '../../integration/twitch/services/twitch-auth.service';
 import { DaAuthService } from '../../integration/da/services/da-auth.service';
 import { InjectModel } from '@nestjs/sequelize';
+import { TelegramBotService } from '../../core/services/telegram-bot.service';
 
 @Controller('user')
 @UseGuards(new AuthGuard(UserModel))
@@ -26,6 +27,7 @@ export class UserController {
     private aucSettingsService: AucSettingsService,
     private twitchAuthService: TwitchAuthService,
     private daAuthService: DaAuthService,
+    private telegramBotService: TelegramBotService,
   ) {}
 
   async doTokenValidation(
@@ -48,7 +50,13 @@ export class UserController {
 
     await this.doTokenValidation(userId, user);
 
-    return this.userService.getUserData(userId);
+    const validUser = await this.userService.getUserData(userId);
+
+    this.telegramBotService.logConnectedUser(
+      validUser.twitchAuth?.username || validUser.daAuth?.username,
+    );
+
+    return validUser;
   }
 
   @Get('integration/validate')

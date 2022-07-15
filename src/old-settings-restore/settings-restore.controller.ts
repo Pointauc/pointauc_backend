@@ -6,10 +6,13 @@ import {
   Post,
   Query,
   Session,
+  UseGuards,
 } from '@nestjs/common';
 import { SettingsRestoreService } from './services/settings-restore.service';
 import { UserSession } from '../user/dto/user.dto';
 import { UserService } from '../user/services/user.service';
+import { AuthGuard } from '../core/guards/auth.guard';
+import { UserModel } from '../user/models/user.model';
 
 @Controller('oldUsers')
 export class SettingsRestoreController {
@@ -18,14 +21,7 @@ export class SettingsRestoreController {
     private settingsRestoreService: SettingsRestoreService,
   ) {}
 
-  // @Get(':id')
-  // async getUser(
-  //   @Param('id') id: string,
-  //   @Session() session: UserSession,
-  // ): Promise<any> {
-  //   return this.settingsRestoreService.getUser(id);
-  // }
-
+  @UseGuards(new AuthGuard(UserModel))
   @Get('cloneIntegration/:id')
   async cloneIntegration(
     @Param('id') id: string,
@@ -42,6 +38,7 @@ export class SettingsRestoreController {
     return this.settingsRestoreService.hasUser(id);
   }
 
+  @UseGuards(new AuthGuard(UserModel))
   @Post('restoreSettings')
   async restoreSettings(
     @Body('id') id: string,

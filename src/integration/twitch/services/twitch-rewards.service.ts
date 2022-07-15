@@ -6,7 +6,10 @@ import {
   ENDPOINTS,
   RedemptionStatus,
 } from '../../../core/constants/api.constants';
-import { ITwitchRedemption } from '../dto/twitch-redemption.dto';
+import {
+  ITwitchRedemption,
+  PatchRedemptionDto,
+} from '../dto/twitch-redemption.dto';
 import { IRewardsResponse, IRewardUpdate } from '../dto/twitch-reward.dto';
 
 @Injectable()
@@ -181,9 +184,7 @@ export class TwitchRewardsService {
   setRedemptionStatus = async (
     token: string,
     channelId: string,
-    redemptionId: string,
-    rewardId: string,
-    status: RedemptionStatus,
+    { redemptionId, rewardId, status }: PatchRedemptionDto,
   ) => {
     const config = this.getCustomRewardsConfig(token, channelId);
     config.params.id = redemptionId;

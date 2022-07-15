@@ -14,6 +14,7 @@ import { SessionValidationMiddleware } from './core/middlewares/session-validati
 import { ConfigModule } from '@nestjs/config';
 import { SettingsRestoreModule } from './old-settings-restore/settings-restore.module';
 import { UserApiModule } from './user/user-api.module';
+import { RandomModule } from './random/random.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { UserApiModule } from './user/user-api.module';
     TwitchModule,
     DaModule,
     SettingsRestoreModule,
+    RandomModule,
   ],
   controllers: [AppController],
 })

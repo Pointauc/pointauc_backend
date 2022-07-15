@@ -34,3 +34,9 @@ export interface ITwitchRedemption {
   user_input: string;
   status: string;
 }
+
+export interface PatchRedemptionDto {
+  rewardId: string;
+  redemptionId: string;
+  status: string;
+}

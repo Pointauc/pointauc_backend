@@ -7,6 +7,7 @@ import { TwitchModule } from '../integration/twitch/twitch.module';
 import { DaModule } from '../integration/da/da.module';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { UserModel } from './models/user.model';
+import { TelegramBotModule } from '../core/telegram-bot.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UserModel } from './models/user.model';
     TwitchModule,
     TwitchSettingsModule,
     DaSettingsModule,
+    TelegramBotModule,
   ],
   controllers: [UserController],
 })
